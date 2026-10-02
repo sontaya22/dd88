@@ -1,32 +1,60 @@
 def calculate_bmi(weight_kg, height_cm):
-    # แปลงส่วนสูงจากเซนติเมตรเป็นเมตร
     height_m = height_cm / 100
-    
-    # คำนวณค่า BMI
-    bmi = weight_kg / (height_m ** 2)
-    
-    # แปลผลค่า BMI (เกณฑ์สำหรับคนเอเชีย/ไทย)
+    bmi = weight_kg / (height_m**2)
+
     if bmi < 18.5:
         category = "น้ำหนักน้อย / ผอม"
-    elif 18.5 <= bmi < 23.0:
+        advice = "ควรรับประทานอาหารที่มีสารอาหารครบถ้วนและเพิ่มปริมาณพลังงาน"
+    elif bmi < 23.0:
         category = "ปกติ (สุขภาพดี)"
-    elif 23.0 <= bmi < 25.0:
+        advice = "รักษาน้ำหนักและพฤติกรรมการทานอาหารให้อยู่ในเกณฑ์นี้ต่อไป"
+    elif bmi < 25.0:
         category = "ท้วม / น้ำหนักเกิน"
-    elif 25.0 <= bmi < 30.0:
+        advice = "ควรเริ่มออกกำลังกายและควบคุมปริมาณน้ำตาลหรือของหวาน"
+    elif bmi < 30.0:
         category = "อ้วนระดับ 1"
+        advice = "ควรออกกำลังกายสม่ำเสมอและคุมอาหารอย่างจริงจัง"
     else:
         category = "อ้วนระดับ 2 (อ้วนมาก)"
-        
-    return bmi, category
+        advice = "ควรปรึกษาแพทย์หรือผู้เชี่ยวชาญเพื่อวางแผนดูแลสุขภาพ"
 
-# รับค่าจากผู้ใช้
-try:
-    weight = float(input("กรอกน้ำหนัก (กก.): "))
-    height = float(input("กรอกส่วนสูง (ซม.): "))
+    return bmi, category, advice
 
-    bmi_value, result = calculate_bmi(weight, height)
 
-    print(f"\nค่า BMI ของคุณคือ: {bmi_value:.2f}")
-    print(f"ผลการประเมิน: {result}")
-except ValueError:
-    print("กรุณากรอกข้อมูลเป็นตัวเลขเท่านั้น")
+def get_valid_input(prompt):
+    while True:
+        try:
+            value = float(input(prompt))
+            if value <= 0:
+                print("❌ กรุณากรอกตัวเลขที่มากกว่า 0")
+                continue
+            return value
+        except ValueError:
+            print("❌ กรุณากรอกเฉพาะตัวเลขเท่านั้น")
+
+
+def main():
+    print("=" * 40)
+    print("     โปรแกรมคำนวณดัชนีมวลกาย (BMI)")
+    print("=" * 40)
+
+    while True:
+        weight = get_valid_input("\nกรอกน้ำหนัก (กิโลกรัม): ")
+        height = get_valid_input("กรอกส่วนสูง (เซนติเมตร): ")
+
+        bmi, category, advice = calculate_bmi(weight, height)
+
+        print("\n" + "-" * 40)
+        print(f" ค่า BMI ของคุณ : {bmi:.2f}")
+        print(f" ผลการประเมิน   : {category}")
+        print(f" คำแนะนำ       : {advice}")
+        print("-" * 40)
+
+        again = input("\nต้องการคำนวณใหม่หรือไม่? (y/n): ").strip().lower()
+        if again != "y":
+            print("\nขอบคุณที่ใช้งาน!")
+            break
+
+
+if __name__ == "__main__":
+    main()
