@@ -1,60 +1,945 @@
-def calculate_bmi(weight_kg, height_cm):
-    # แปลงส่วนสูงจาก เซนติเมตร เป็น เมตร
-    height_m = height_cm / 100
+<!DOCTYPE html>
+<html lang="th" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เครื่องคำนวณดัชนีมวลกาย - BMI & Energy Calculator</title>
+    <!-- Google Fonts: Prompt for crisp Thai typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js for history visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- HTML2Canvas for image export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
-    # คำนวณค่า BMI
-    bmi = weight_kg / (height_m**2)
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Prompt', 'sans-serif'],
+                    },
+                    colors: {
+                        bmi: {
+                            under: '#3B82F6',
+                            normal: '#10B981',
+                            over: '#F59E0B',
+                            obese1: '#FB923C',
+                            obese2: '#EF4444',
+                        }
+                    },
+                    boxShadow: {
+                        'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.12)',
+                        'glass-dark': '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
+                    }
+                }
+            }
+        }
+    </script>
 
-    # แปลผลตามเกณฑ์มาตรฐาน (สำหรับคนเอเชีย)
-    if bmi < 18.5:
-        category = "น้ำหนักน้อย / ผอม"
-    elif 18.5 <= bmi < 23.0:
-        category = "ปกติ (สุขภาพดี)"
-    elif 23.0 <= bmi < 25.0:
-        category = "ท้วม / น้ำหนักเกิน"
-    elif 25.0 <= bmi < 30.0:
-        category = "อ้วนระดับ 1"
-    else:
-        category = "อ้วนระดับ 2 (อ้วนมาก)"
+    <style>
+        body {
+            font-family: 'Prompt', sans-serif;
+        }
 
-    return bmi, category
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.05);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(156, 163, 175, 0.5);
+            border-radius: 9999px;
+        }
 
+        /* Transition for gauge needle rotation */
+        #gauge-needle {
+            transition: transform 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+            transform-origin: 150px 140px;
+        }
 
-# --- ตัวอย่างการรับค่าและแสดงผล ---
-try:
-    weight = float(input("กรุณากรอกน้ำหนัก (กก.): "))
-    height = float(input("กรุณากรอกส่วนสูง (ซม.): "))
+        /* Glassmorphism utility classes */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
 
-    bmi_value, result = calculate_bmi(weight, height)
+        .dark .glass-panel {
+            background: rgba(30, 41, 59, 0.82);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
 
-    print(f"\nค่า BMI ของคุณคือ: {bmi_value:.2f}")
-    print(f"ผลการประเมิน: {result}")
-except ValueError:
-    print("กรุณากรอกข้อมูลเป็นตัวเลขเท่านั้น")
-        function calculateBMI(weightKg, heightCm) {
-    const heightM = heightCm / 100;
-    const bmi = weightKg / (heightM * heightM);
-    let category = "";
+        /* Custom print formatting */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #printable-area, #printable-area * {
+                visibility: visible;
+            }
+            #printable-area {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col transition-colors duration-300">
 
-    if (bmi < 18.5) {
-        category = "น้ำหนักน้อย / ผอม";
-    } else if (bmi < 23.0) {
-        category = "ปกติ (สุขภาพดี)";
-    } else if (bmi < 25.0) {
-        category = "ท้วม / น้ำหนักเกิน";
-    } else if (bmi < 30.0) {
-        category = "อ้วนระดับ 1";
-    } else {
-        category = "อ้วนระดับ 2 (อ้วนมาก)";
-    }
+    <header class="sticky top-0 z-40 w-full glass-panel border-b shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-emerald-500 flex items-center justify-center text-white shadow-lg">
+                    <i class="fa-solid font-bold text-xl fa-heart-pulse"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg sm:text-xl font-bold bg-gradient-to-r from-indigo-600 via-emerald-600 to-teal-500 bg-clip-text text-transparent">
+                        BMI Smart Calculator
+                    </h1>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">
+                        โปรแกรมคำนวณดัชนีมวลกาย & พลังงานที่ต้องการต่อวัน
+                    </p>
+                </div>
+            </div>
 
-    return {
-        bmi: bmi.toFixed(2),
-        category: category
-    };
-}
+            <!-- Right header controls -->
+            <div class="flex items-center gap-3">
+                <!-- Criteria Toggle Badge -->
+                <div class="hidden md:flex items-center bg-slate-200/80 dark:bg-slate-800/80 p-1 rounded-xl text-xs font-medium">
+                    <button id="std-asia-btn" onclick="setStandard('asia')" class="px-3 py-1.5 rounded-lg transition-all duration-200 shadow-sm bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 font-semibold">
+                        เกณฑ์คนไทย/เอเชีย
+                    </button>
+                    <button id="std-who-btn" onclick="setStandard('who')" class="px-3 py-1.5 rounded-lg transition-all duration-200 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200">
+                        เกณฑ์สากล (WHO)
+                    </button>
+                </div>
 
-// ตัวอย่างการเรียกใช้งาน
-const result = calculateBMI(65, 170); // น้ำหนัก 65 kg, ส่วนสูง 170 cm
-console.log(`ค่า BMI: ${result.bmi}`);
-console.log(`ผลประเมิน: ${result.category}`);
+                <!-- Dark mode toggle button -->
+                <button id="theme-toggle" onclick="toggleDarkMode()" aria-label="Toggle dark mode" class="w-10 h-10 rounded-xl bg-slate-200/80 dark:bg-slate-800/80 flex items-center justify-center text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors">
+                    <i class="fa-solid fa-moon dark:hidden text-indigo-600"></i>
+                    <i class="fa-solid fa-sun hidden dark:block text-amber-400"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+        <!-- Mobile Criteria Switcher -->
+        <div class="flex md:hidden items-center justify-center bg-slate-200/80 dark:bg-slate-800/80 p-1 rounded-xl text-xs font-medium w-full">
+            <button id="std-asia-btn-mb" onclick="setStandard('asia')" class="w-1/2 py-2 rounded-lg transition-all duration-200 shadow-sm bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 font-semibold text-center">
+                เกณฑ์คนไทย/เอเชีย
+            </button>
+            <button id="std-who-btn-mb" onclick="setStandard('who')" class="w-1/2 py-2 rounded-lg transition-all duration-200 text-slate-500 dark:text-slate-400 text-center">
+                เกณฑ์สากล (WHO)
+            </button>
+        </div>
+
+        <!-- Upper Grid: Input Form + Visual Results -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+            <div class="lg:col-span-5 glass-panel rounded-2xl p-6 shadow-glass dark:shadow-glass-dark flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-700/60 pb-3 mb-5">
+                        <h2 class="text-lg font-semibold flex items-center gap-2">
+                            <i class="fa-solid fa-sliders text-indigo-500"></i> ข้อมูลร่างกายของคุณ
+                        </h2>
+                        <button onclick="resetInputs()" class="text-xs text-slate-400 hover:text-indigo-500 transition-colors flex items-center gap-1">
+                            <i class="fa-solid fa-rotate-left"></i> รีเซ็ต
+                        </button>
+                    </div>
+
+                    <form id="bmi-form" onsubmit="event.preventDefault(); calculateBMI();" class="space-y-4">
+                        <!-- Gender Selection -->
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wider">
+                                เพศสภาพ (Gender)
+                            </label>
+                            <div class="grid grid-cols-2 gap-3">
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="gender" value="male" checked onchange="calculateBMI()" class="peer hidden">
+                                    <div class="flex items-center justify-center gap-2 p-3 rounded-xl border border-slate-200 dark:border-slate-700 peer-checked:border-indigo-500 peer-checked:bg-indigo-50 dark:peer-checked:bg-indigo-950/40 peer-checked:text-indigo-600 dark:peer-checked:text-indigo-400 font-medium transition-all">
+                                        <i class="fa-solid fa-mars text-lg"></i> ชาย (Male)
+                                    </div>
+                                </label>
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="gender" value="female" onchange="calculateBMI()" class="peer hidden">
+                                    <div class="flex items-center justify-center gap-2 p-3 rounded-xl border border-slate-200 dark:border-slate-700 peer-checked:border-pink-500 peer-checked:bg-pink-50 dark:peer-checked:bg-pink-950/40 peer-checked:text-pink-600 dark:peer-checked:text-pink-400 font-medium transition-all">
+                                        <i class="fa-solid fa-venus text-lg"></i> หญิง (Female)
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Age Input -->
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <label for="age" class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                                    อายุ (Age)
+                                </label>
+                                <span id="age-val" class="text-xs font-bold text-indigo-600 dark:text-indigo-400">25 ปี</span>
+                            </div>
+                            <div class="relative">
+                                <input type="number" id="age" value="25" min="1" max="120" oninput="updateAgeDisplay(); calculateBMI();" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-800/50 focus:ring-2 focus:ring-indigo-500 outline-none transition-all pr-12 font-medium">
+                                <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-medium">ปี</span>
+                            </div>
+                        </div>
+
+                        <!-- Height Input & Unit Toggle -->
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                                    ส่วนสูง (Height)
+                                </label>
+                                <div class="flex items-center text-xs font-medium bg-slate-200/60 dark:bg-slate-800 p-0.5 rounded-lg">
+                                    <button type="button" id="unit-height-cm" onclick="setHeightUnit('cm')" class="px-2 py-0.5 rounded bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 font-semibold shadow-xs">cm</button>
+                                    <button type="button" id="unit-height-ft" onclick="setHeightUnit('ft')" class="px-2 py-0.5 rounded text-slate-500 dark:text-slate-400">ft/in</button>
+                                </div>
+                            </div>
+
+                            <!-- Centimeters container -->
+                            <div id="height-cm-container" class="relative">
+                                <input type="number" id="height-cm" value="170" min="50" max="250" step="0.5" oninput="calculateBMI()" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-800/50 focus:ring-2 focus:ring-indigo-500 outline-none transition-all pr-12 font-medium">
+                                <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-medium">ซม.</span>
+                            </div>
+
+                            <!-- Feet/Inches container -->
+                            <div id="height-ft-container" class="hidden grid-cols-2 gap-2">
+                                <div class="relative">
+                                    <input type="number" id="height-ft" value="5" min="1" max="8" oninput="calculateBMI()" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-800/50 focus:ring-2 focus:ring-indigo-500 outline-none transition-all pr-12 font-medium">
+                                    <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">ft</span>
+                                </div>
+                                <div class="relative">
+                                    <input type="number" id="height-in" value="7" min="0" max="11" oninput="calculateBMI()" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-800/50 focus:ring-2 focus:ring-indigo-500 outline-none transition-all pr-12 font-medium">
+                                    <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">in</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Weight Input & Unit Toggle -->
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                                    น้ำหนัก (Weight)
+                                </label>
+                                <div class="flex items-center text-xs font-medium bg-slate-200/60 dark:bg-slate-800 p-0.5 rounded-lg">
+                                    <button type="button" id="unit-weight-kg" onclick="setWeightUnit('kg')" class="px-2 py-0.5 rounded bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 font-semibold shadow-xs">kg</button>
+                                    <button type="button" id="unit-weight-lbs" onclick="setWeightUnit('lbs')" class="px-2 py-0.5 rounded text-slate-500 dark:text-slate-400">lbs</button>
+                                </div>
+                            </div>
+                            <div class="relative">
+                                <input type="number" id="weight" value="65" min="10" max="300" step="0.5" oninput="calculateBMI()" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-800/50 focus:ring-2 focus:ring-indigo-500 outline-none transition-all pr-12 font-medium">
+                                <span id="weight-unit-label" class="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-medium">กก.</span>
+                            </div>
+                        </div>
+
+                        <!-- Daily Activity Level -->
+                        <div>
+                            <label for="activity" class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1 uppercase tracking-wider">
+                                กิจกรรมประจำวัน (Activity Level)
+                            </label>
+                            <select id="activity" onchange="calculateBMI()" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-800/50 focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm font-medium">
+                                <option value="1.2">น้อยมาก / นั่งทำงานอยู่กับที่ไม่ได้ออกกำลังกาย</option>
+                                <option value="1.375">เบาๆ / ออกกำลังกาย 1-3 วัน/สัปดาห์</option>
+                                <option value="1.55" selected>ปานกลาง / ออกกำลังกาย 3-5 วัน/สัปดาห์</option>
+                                <option value="1.725">หนัก / ออกกำลังกาย 6-7 วัน/สัปดาห์</option>
+                                <option value="1.9">หนักมาก / นักกีฬา ฝึกซ้อมหนักประจำ</option>
+                            </select>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="pt-2 flex gap-3">
+                            <button type="button" onclick="calculateBMI()" class="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-indigo-600 to-teal-500 hover:from-indigo-700 hover:to-teal-600 text-white font-semibold shadow-md shadow-indigo-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-calculator"></i> คำนวณ BMI
+                            </button>
+                            <button type="button" onclick="saveRecord()" class="py-3 px-4 rounded-xl bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-semibold active:scale-[0.98] transition-all flex items-center gap-2" title="บันทึกประวัติ">
+                                <i class="fa-solid fa-bookmark text-amber-500"></i> บันทึก
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div id="printable-area" class="lg:col-span-7 glass-panel rounded-2xl p-6 shadow-glass dark:shadow-glass-dark flex flex-col justify-between">
+                <div>
+                    <!-- Result Title Header -->
+                    <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-700/60 pb-3 mb-4">
+                        <h2 class="text-lg font-semibold flex items-center gap-2">
+                            <i class="fa-solid fa-chart-pie text-teal-500"></i> ผลการวิเคราะห์สุขภาพ
+                        </h2>
+                        <span id="standard-badge" class="px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300">
+                            เกณฑ์เอเชีย-แปซิฟิก
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+                        <!-- Semi-circle Gauge Container -->
+                        <div class="md:col-span-6 flex flex-col items-center justify-center relative">
+                            <div class="relative w-64 h-36 flex items-end justify-center">
+                                <!-- SVG Semi Circle Gauge -->
+                                <svg class="w-full h-full overflow-visible" viewBox="0 0 300 170">
+                                    <defs>
+                                        <linearGradient id="gauge-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                                            <stop offset="0%" stop-color="#3B82F6" />
+                                            <stop offset="25%" stop-color="#10B981" />
+                                            <stop offset="50%" stop-color="#F59E0B" />
+                                            <stop offset="75%" stop-color="#FB923C" />
+                                            <stop offset="100%" stop-color="#EF4444" />
+                                        </linearGradient>
+                                    </defs>
+
+                                    <!-- Gauge Arc Background segments -->
+                                    <path d="M 30 140 A 120 120 0 0 1 270 140" fill="none" stroke="#E2E8F0" stroke-width="26" stroke-linecap="round" class="dark:stroke-slate-800" />
+                                    <!-- Dynamic Color Arc -->
+                                    <path d="M 30 140 A 120 120 0 0 1 270 140" fill="none" stroke="url(#gauge-grad)" stroke-width="24" stroke-linecap="round" />
+
+                                    <!-- Segment tick marks -->
+                                    <circle cx="150" cy="140" r="6" fill="#64748B" />
+
+                                    <!-- Needle Pointer -->
+                                    <g id="gauge-needle" style="transform: rotate(-90deg);">
+                                        <polygon points="150,25 144,140 156,140" fill="#1E293B" class="dark:fill-slate-100" />
+                                        <circle cx="150" cy="140" r="10" fill="#6366F1" stroke="#FFFFFF" stroke-width="3" />
+                                    </g>
+                                </svg>
+                            </div>
+
+                            <!-- BMI Value & Badge -->
+                            <div class="text-center mt-2">
+                                <div class="text-xs text-slate-400 font-medium uppercase tracking-wider">ค่าดัชนีมวลกาย (BMI)</div>
+                                <div id="bmi-score" class="text-4xl font-extrabold text-slate-800 dark:text-slate-100 my-1">
+                                    22.5
+                                </div>
+                                <div id="bmi-category-badge" class="inline-block px-4 py-1.5 rounded-full text-sm font-bold text-white bg-emerald-500 shadow-sm transition-all duration-300">
+                                    น้ำหนักปกติ / สมส่วน
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Ideal Weight & Recommendation Summary -->
+                        <div class="md:col-span-6 space-y-3">
+                            <div class="p-3.5 rounded-xl bg-slate-100/80 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/50">
+                                <div class="text-xs text-slate-500 dark:text-slate-400 font-medium">ช่วงน้ำหนักที่เหมาะสมของคุณ</div>
+                                <div id="ideal-weight-range" class="text-base font-bold text-slate-800 dark:text-slate-200 mt-0.5">
+                                    53.5 - 66.2 กิโลกรัม
+                                </div>
+                                <p id="weight-advice-text" class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                    น้ำหนักปัจจุบันอยู่ในเกณฑ์ที่เหมาะสมเยี่ยมยอดแล้ว!
+                                </p>
+                            </div>
+
+                            <!-- Quick Calorie Target Breakdown -->
+                            <div class="grid grid-cols-2 gap-2">
+                                <div class="p-3 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/50">
+                                    <div class="text-[11px] text-indigo-600 dark:text-indigo-400 font-medium">อัตราเผาผลาญขั้นต่ำ (BMR)</div>
+                                    <div id="bmr-score" class="text-base font-bold text-indigo-700 dark:text-indigo-300">1,520 kcal</div>
+                                </div>
+                                <div class="p-3 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-900/50">
+                                    <div class="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">พลังงานใช้งานต่อวัน (TDEE)</div>
+                                    <div id="tdee-score" class="text-base font-bold text-emerald-700 dark:text-emerald-300">2,356 kcal</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Calorie Plan Guidance Grid -->
+                    <div class="mt-5 pt-4 border-t border-slate-200 dark:border-slate-700/60">
+                        <h3 class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2.5">
+                            ข้อแนะนำปริมาณแคลอรีตามเป้าหมาย (Daily Calorie Targets)
+                        </h3>
+                        <div class="grid grid-cols-3 gap-2 text-center">
+                            <div class="p-2.5 rounded-xl bg-blue-50 dark:bg-slate-800 border border-blue-100 dark:border-slate-700">
+                                <span class="text-[10px] text-slate-500 dark:text-slate-400 block">ลดน้ำหนัก (-0.5 kg/สัปดาห์)</span>
+                                <span id="cal-lose" class="text-sm font-bold text-blue-600 dark:text-blue-400">1,856 kcal</span>
+                            </div>
+                            <div class="p-2.5 rounded-xl bg-emerald-50 dark:bg-slate-800 border border-emerald-100 dark:border-slate-700">
+                                <span class="text-[10px] text-slate-500 dark:text-slate-400 block">รักษาน้ำหนักคงที่</span>
+                                <span id="cal-maintain" class="text-sm font-bold text-emerald-600 dark:text-emerald-400">2,356 kcal</span>
+                            </div>
+                            <div class="p-2.5 rounded-xl bg-amber-50 dark:bg-slate-800 border border-amber-100 dark:border-slate-700">
+                                <span class="text-[10px] text-slate-500 dark:text-slate-400 block">เพิ่มกล้ามเนื้อ/น้ำหนัก</span>
+                                <span id="cal-gain" class="text-sm font-bold text-amber-600 dark:text-amber-400">2,856 kcal</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons & Printable trigger -->
+                <div class="mt-4 pt-3 flex items-center justify-between no-print">
+                    <button onclick="exportResultCard()" class="text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-1.5 transition-colors">
+                        <i class="fa-solid fa-download"></i> ดาวน์โหลดการ์ดสรุป
+                    </button>
+                    <button onclick="window.print()" class="text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-1.5 transition-colors">
+                        <i class="fa-solid fa-print"></i> พิมพ์รายงาน
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass-panel rounded-2xl p-6 shadow-glass dark:shadow-glass-dark">
+            <h2 class="text-lg font-semibold flex items-center gap-2 mb-4">
+                <i class="fa-solid fa-user-doctor text-emerald-500"></i> คำแนะนำเพื่อสุขภาพและโภชนาการเฉพาะคุณ
+            </h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Diet Advice Card -->
+                <div class="p-4 rounded-xl bg-white/60 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 flex gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                        <i class="fa-solid fa-utensils text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-sm mb-1">คำแนะนำการรับประทานอาหาร</h3>
+                        <p id="nutrition-tips-text" class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                            รับประทานอาหารให้ครบ 5 หมู่ เน้นโปรตีนคุณภาพดี เช่น เนื้อปลา ไข่ ถั่ว และเพิ่มผักผลไม้หลากสี ลดหวาน มัน เค็ม
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Exercise Advice Card -->
+                <div class="p-4 rounded-xl bg-white/60 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 flex gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                        <i class="fa-solid fa-person-running text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-sm mb-1">คำแนะนำการออกกำลังกาย</h3>
+                        <p id="exercise-tips-text" class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                            ออกกำลังกายแอโรบิกปานกลาง เช่น เดินเร็ว วิ่งจ๊อกกิ้ง สัปดาห์ละอย่างน้อย 150 นาที พร้อมฝึกเวทเทรนนิ่ง 2 วัน/สัปดาห์
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass-panel rounded-2xl p-6 shadow-glass dark:shadow-glass-dark space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-700/60 pb-3">
+                <div>
+                    <h2 class="text-lg font-semibold flex items-center gap-2">
+                        <i class="fa-solid fa-clock-rotate-left text-indigo-500"></i> ประวัติและการติดตามพัฒนาการ
+                    </h2>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">บันทึกน้ำหนักและดัชนีมวลกายเพื่อติดตามผลลัพธ์ในระยะยาว</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="clearHistory()" class="px-3 py-1.5 rounded-xl border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 text-xs font-medium transition-colors">
+                        <i class="fa-solid fa-trash-can"></i> ล้างประวัติทั้งหมด
+                    </button>
+                </div>
+            </div>
+
+            <!-- Historical Chart SVG / Canvas -->
+            <div class="bg-white/50 dark:bg-slate-800/40 p-4 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
+                <div class="h-64 relative w-full">
+                    <canvas id="bmiChart"></canvas>
+                </div>
+            </div>
+
+            <!-- History Logs Table -->
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="border-b border-slate-200 dark:border-slate-700 text-xs uppercase text-slate-400">
+                            <th class="py-2.5 px-3 font-semibold">วัน-เวลา</th>
+                            <th class="py-2.5 px-3 font-semibold">ส่วนสูง</th>
+                            <th class="py-2.5 px-3 font-semibold">น้ำหนัก</th>
+                            <th class="py-2.5 px-3 font-semibold">ค่า BMI</th>
+                            <th class="py-2.5 px-3 font-semibold">สถานะ</th>
+                            <th class="py-2.5 px-3 font-semibold text-right">จัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-table-body" class="text-xs divide-y divide-slate-100 dark:divide-slate-800">
+                        <!-- History items populated via JS -->
+                    </tbody>
+                </table>
+                <div id="history-empty" class="py-8 text-center text-xs text-slate-400">
+                    ยังไม่มีข้อมูลประวัติ กดปุ่ม "บันทึก" เพื่อจัดเก็บผลการคำนวณของคุณ
+                </div>
+            </div>
+        </div>
+
+        <!-- Standard Reference Table Section -->
+        <div class="glass-panel rounded-2xl p-6 shadow-glass dark:shadow-glass-dark">
+            <h2 class="text-md font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+                <i class="fa-solid fa-circle-info text-blue-500"></i> ตารางเปรียบเทียบเกณฑ์ดัชนีมวลกาย (BMI Reference Standard)
+            </h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-xs text-left">
+                    <thead>
+                        <tr class="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-semibold">
+                            <th class="p-2.5 rounded-l-lg">เกณฑ์เอเชีย-แปซิฟิก (คนไทย)</th>
+                            <th class="p-2.5">เกณฑ์สากล (WHO)</th>
+                            <th class="p-2.5">ระดับภาวะสุขภาพ</th>
+                            <th class="p-2.5 rounded-r-lg">ความเสี่ยงต่อโรคเบาหวาน/ความดัน</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 dark:divide-slate-800/50">
+                        <tr>
+                            <td class="p-2.5 font-medium text-blue-600 dark:text-blue-400">&lt; 18.5</td>
+                            <td class="p-2.5 font-medium text-blue-600 dark:text-blue-400">&lt; 18.5</td>
+                            <td class="p-2.5">น้ำหนักน้อย / ผอม (Underweight)</td>
+                            <td class="p-2.5 text-slate-500">น้อยกว่าปกติ (เสี่ยงขาดสารอาหาร)</td>
+                        </tr>
+                        <tr>
+                            <td class="p-2.5 font-medium text-emerald-600 dark:text-emerald-400">18.5 - 22.9</td>
+                            <td class="p-2.5 font-medium text-emerald-600 dark:text-emerald-400">18.5 - 24.9</td>
+                            <td class="p-2.5 font-semibold text-emerald-600 dark:text-emerald-400">ปกติ / สมส่วน (Normal)</td>
+                            <td class="p-2.5 text-emerald-600 dark:text-emerald-400 font-medium">เท่ากับคนปกติ</td>
+                        </tr>
+                        <tr>
+                            <td class="p-2.5 font-medium text-amber-600 dark:text-amber-400">23.0 - 24.9</td>
+                            <td class="p-2.5 font-medium text-amber-600 dark:text-amber-400">25.0 - 29.9</td>
+                            <td class="p-2.5">น้ำหนักเกิน / ท้วม (Overweight)</td>
+                            <td class="p-2.5 text-amber-600 dark:text-amber-400">เพิ่มขึ้นระดับเริ่มต้น</td>
+                        </tr>
+                        <tr>
+                            <td class="p-2.5 font-medium text-orange-600 dark:text-orange-400">25.0 - 29.9</td>
+                            <td class="p-2.5 font-medium text-orange-600 dark:text-orange-400">30.0 - 34.9</td>
+                            <td class="p-2.5">อ้วนระดับ 1 (Obese Class 1)</td>
+                            <td class="p-2.5 text-orange-600 dark:text-orange-400">ปานกลาง - ปัจจัยเสี่ยงสูง</td>
+                        </tr>
+                        <tr>
+                            <td class="p-2.5 font-medium text-red-600 dark:text-red-400">&ge; 30.0</td>
+                            <td class="p-2.5 font-medium text-red-600 dark:text-red-400">&ge; 35.0</td>
+                            <td class="p-2.5 font-semibold text-red-600 dark:text-red-400">อ้วนระดับ 2 / อ้วนมาก (Obese Class 2)</td>
+                            <td class="p-2.5 text-red-600 dark:text-red-400 font-bold">อันตรายสูงมาก</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Notification Toast Container -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 space-y-2 pointer-events-none"></div>
+
+    <footer class="glass-panel border-t mt-12 py-6 text-center text-xs text-slate-500 dark:text-slate-400">
+        <div class="max-w-7xl mx-auto px-4">
+            <p>© 2026 BMI & Health Tracker. ออกแบบเพื่อส่งเสริมสุขภาพที่ดีสำหรับคนไทย</p>
+            <p class="mt-1 text-[11px] text-slate-400">ข้อแนะนำนี้มีไว้เพื่อวัตถุประสงค์ในการให้ข้อมูลเบื้องต้นเท่านั้น ไม่สามารถใช้ทดแทนคำวินิจฉัยทางการแพทย์ได้</p>
+        </div>
+    </footer>
+
+    <script>
+        // App State Variables
+        let currentStandard = 'asia'; // 'asia' or 'who'
+        let heightUnit = 'cm'; // 'cm' or 'ft'
+        let weightUnit = 'kg'; // 'kg' or 'lbs'
+        let historyLogs = [];
+        let chartInstance = null;
+
+        // BMI Categories Definitions
+        const BMI_STANDARDS = {
+            asia: [
+                { max: 18.5, label: 'น้ำหนักน้อย / ผอม', color: '#3B82F6', badgeBg: 'bg-blue-500', adviceDiet: 'เพิ่มปริมาณแคลอรีด้วยอาหารที่มีประโยชน์ เน้นโปรตีนและไขมันดี เช่น ถั่ว อะโวคาโด และนม', adviceEx: 'เน้นการออกกำลังกายแบบแรงต้าน (Strength Training) เพื่อสร้างมวลกล้ามเนื้อ' },
+                { max: 22.9, label: 'ปกติ / สมส่วน', color: '#10B981', badgeBg: 'bg-emerald-500', adviceDiet: 'รับประทานอาหารให้ครบ 5 หมู่ เน้นผัก ผลไม้ และโปรตีนไขมันต่ำ รักษาสมดุลพลังงานให้พอดี', adviceEx: 'คาร์ดิโออย่างน้อย 150 นาที/สัปดาห์ ควบคู่กับการเวทเทรนนิ่งเพื่อรักษามวลกล้ามเนื้อ' },
+                { max: 24.9, label: 'ท้วม / น้ำหนักเกิน', color: '#F59E0B', badgeBg: 'bg-amber-500', adviceDiet: 'ลดการบริโภคน้ำตาล ขนมหวาน อาหารทอด และแป้งขัดขาว เพิ่มใยอาหารจากผักและธัญพืช', adviceEx: 'เพิ่มกิจกรรมทางกาย เดินเร็วหรือวิ่งเหยาะๆ อย่างน้อย 30-45 นาที วันละ 4-5 วัน' },
+                { max: 29.9, label: 'อ้วนระดับ 1', color: '#FB923C', badgeBg: 'bg-orange-500', adviceDiet: 'ควบคุมปริมาณพลังงานรวมต่อวัน (Calorie Deficit) ลดการกินจุกจิก และหลีกเลี่ยงเครื่องดื่มชงหวาน', adviceEx: 'เริ่มออกกำลังกายแรงกระแทกต่ำ เช่น ว่ายน้ำ ปั่นจักรยาน หรือเดินเร็ว เพื่อถนอมข้อเข่า' },
+                { max: 999, label: 'อ้วนระดับ 2 / อ้วนมาก', color: '#EF4444', badgeBg: 'bg-red-500', adviceDiet: 'จำกัดปริมาณแคลอรีอย่างจริงจัง ปรึกษาโภชนากรเพื่อวางแผนอาหาร และหลีกเลี่ยงไขมันอิ่มตัว', adviceEx: 'ปรึกษาแพทย์ก่อนเริ่มออกกำลังกายหนัก เน้นเดินเบาๆ หรือกายบริหารในน้ำ' }
+            ],
+            who: [
+                { max: 18.5, label: 'น้ำหนักน้อย / ผอม', color: '#3B82F6', badgeBg: 'bg-blue-500', adviceDiet: 'เพิ่มปริมาณแคลอรีด้วยอาหารที่มีประโยชน์ เน้นโปรตีนและไขมันดี', adviceEx: 'เน้นการออกกำลังกายแบบแรงต้านเพื่อเพิ่มมวลกล้ามเนื้อ' },
+                { max: 24.9, label: 'ปกติ / สมส่วน', color: '#10B981', badgeBg: 'bg-emerald-500', adviceDiet: 'รักษาสมดุลอาหารครบ 5 หมู่ เน้นผักผลไม้ และโปรตีนคุณภาพ', adviceEx: 'ออกกำลังกายสม่ำเสมออย่างน้อย 150 นาที/สัปดาห์' },
+                { max: 29.9, label: 'ท้วม / น้ำหนักเกิน', color: '#F59E0B', badgeBg: 'bg-amber-500', adviceDiet: 'ลดหวาน มัน เค็ม และควบคุมแคลอรีที่ได้รับประจำวัน', adviceEx: 'เพิ่มการเผาผลาญด้วยคาร์ดิโอ 30-45 นาทีเป็นประจำ' },
+                { max: 34.9, label: 'อ้วนระดับ 1', color: '#FB923C', badgeBg: 'bg-orange-500', adviceDiet: 'ลดปริมาณอาหารจานหลัก และงดงดเครื่องดื่มที่มีน้ำตาลสูง', adviceEx: 'ออกกำลังกายแรงกระแทกต่ำสม่ำเสมอเพื่อปกป้องข้อต่อ' },
+                { max: 999, label: 'อ้วนระดับ 2 / อ้วนมาก', color: '#EF4444', badgeBg: 'bg-red-500', adviceDiet: 'ควบคุมโภชนาการเข้มงวดภายใต้คำแนะนำของแพทย์หรือนักโภชนาการ', adviceEx: 'เริ่มจากการเคลื่อนไหวร่างกายเบาๆ ป้องกันอาการบาดเจ็บ' }
+            ]
+        };
+
+        // Initialize on Load
+        window.onload = function() {
+            loadSavedHistory();
+            initChart();
+            calculateBMI();
+        };
+
+        // Dark Mode Toggle
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark');
+            if (chartInstance) {
+                chartInstance.options.scales.x.grid.color = document.documentElement.classList.contains('dark') ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)';
+                chartInstance.options.scales.y.grid.color = document.documentElement.classList.contains('dark') ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)';
+                chartInstance.update();
+            }
+        }
+
+        // Set Standard Criteria
+        function setStandard(std) {
+            currentStandard = std;
+            const asiaBtn = document.getElementById('std-asia-btn');
+            const whoBtn = document.getElementById('std-who-btn');
+            const asiaBtnMb = document.getElementById('std-asia-btn-mb');
+            const whoBtnMb = document.getElementById('std-who-btn-mb');
+            const badge = document.getElementById('standard-badge');
+
+            const activeClass = "px-3 py-1.5 rounded-lg transition-all duration-200 shadow-sm bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 font-semibold";
+            const inactiveClass = "px-3 py-1.5 rounded-lg transition-all duration-200 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200";
+
+            if (std === 'asia') {
+                asiaBtn.className = activeClass;
+                whoBtn.className = inactiveClass;
+                asiaBtnMb.className = "w-1/2 py-2 rounded-lg shadow-sm bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 font-semibold text-center";
+                whoBtnMb.className = "w-1/2 py-2 rounded-lg text-slate-500 dark:text-slate-400 text-center";
+                badge.innerText = "เกณฑ์เอเชีย-แปซิฟิก";
+            } else {
+                asiaBtn.className = inactiveClass;
+                whoBtn.className = activeClass;
+                asiaBtnMb.className = "w-1/2 py-2 rounded-lg text-slate-500 dark:text-slate-400 text-center";
+                whoBtnMb.className = "w-1/2 py-2 rounded-lg shadow-sm bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 font-semibold text-center";
+                badge.innerText = "เกณฑ์สากล (WHO)";
+            }
+
+            calculateBMI();
+            showToast(`เปลี่ยนเป็น${badge.innerText} เรียบร้อยแล้ว`);
+        }
+
+        // Unit Switchers
+        function setHeightUnit(unit) {
+            heightUnit = unit;
+            const cmContainer = document.getElementById('height-cm-container');
+            const ftContainer = document.getElementById('height-ft-container');
+            const btnCm = document.getElementById('unit-height-cm');
+            const btnFt = document.getElementById('unit-height-ft');
+
+            if (unit === 'cm') {
+                cmContainer.classList.remove('hidden');
+                ftContainer.classList.add('hidden');
+                ftContainer.classList.remove('grid');
+                btnCm.className = "px-2 py-0.5 rounded bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 font-semibold shadow-xs";
+                btnFt.className = "px-2 py-0.5 rounded text-slate-500 dark:text-slate-400";
+            } else {
+                cmContainer.classList.add('hidden');
+                ftContainer.classList.remove('hidden');
+                ftContainer.classList.add('grid');
+                btnFt.className = "px-2 py-0.5 rounded bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 font-semibold shadow-xs";
+                btnCm.className = "px-2 py-0.5 rounded text-slate-500 dark:text-slate-400";
+            }
+            calculateBMI();
+        }
+
+        function setWeightUnit(unit) {
+            weightUnit = unit;
+            const btnKg = document.getElementById('unit-weight-kg');
+            const btnLbs = document.getElementById('unit-weight-lbs');
+            const unitLabel = document.getElementById('weight-unit-label');
+
+            if (unit === 'kg') {
+                btnKg.className = "px-2 py-0.5 rounded bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 font-semibold shadow-xs";
+                btnLbs.className = "px-2 py-0.5 rounded text-slate-500 dark:text-slate-400";
+                unitLabel.innerText = "กก.";
+            } else {
+                btnLbs.className = "px-2 py-0.5 rounded bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 font-semibold shadow-xs";
+                btnKg.className = "px-2 py-0.5 rounded text-slate-500 dark:text-slate-400";
+                unitLabel.innerText = "lbs";
+            }
+            calculateBMI();
+        }
+
+        function updateAgeDisplay() {
+            const ageVal = document.getElementById('age').value || 0;
+            document.getElementById('age-val').innerText = `${ageVal} ปี`;
+        }
+
+        function calculateBMI() {
+            // Get Height in meters
+            let heightInMeters = 0;
+            if (heightUnit === 'cm') {
+                const cm = parseFloat(document.getElementById('height-cm').value) || 170;
+                heightInMeters = cm / 100;
+            } else {
+                const ft = parseFloat(document.getElementById('height-ft').value) || 0;
+                const inches = parseFloat(document.getElementById('height-in').value) || 0;
+                const totalInches = (ft * 12) + inches;
+                heightInMeters = (totalInches * 2.54) / 100;
+            }
+
+            // Get Weight in kg
+            let weightInKg = parseFloat(document.getElementById('weight').value) || 60;
+            if (weightUnit === 'lbs') {
+                weightInKg = weightInKg * 0.45359237;
+            }
+
+            // Calculate BMI score
+            if (heightInMeters <= 0 || weightInKg <= 0) return;
+            const bmi = weightInKg / (heightInMeters * heightInMeters);
+            const bmiRounded = bmi.toFixed(1);
+
+            // Update BMI Score Display
+            document.getElementById('bmi-score').innerText = bmiRounded;
+
+            // Determine Category based on chosen Standard
+            const standards = BMI_STANDARDS[currentStandard];
+            let matchedCategory = standards[standards.length - 1];
+
+            for (let i = 0; i < standards.length; i++) {
+                if (bmi < standards[i].max) {
+                    matchedCategory = standards[i];
+                    break;
+                }
+            }
+
+            // Update Badge & Styles
+            const badge = document.getElementById('bmi-category-badge');
+            badge.innerText = matchedCategory.label;
+            badge.style.backgroundColor = matchedCategory.color;
+
+            // Update Needle Rotation Angle on SVG Gauge
+            // Map BMI from 10..40 range to angle -90deg..+90deg
+            let angle = -90 + ((bmi - 12) / (38 - 12)) * 180;
+            if (angle < -90) angle = -90;
+            if (angle > 90) angle = 90;
+            document.getElementById('gauge-needle').style.transform = `rotate(${angle}deg)`;
+
+            // Calculate Ideal Weight Range
+            const maxNormalBmi = currentStandard === 'asia' ? 22.9 : 24.9;
+            const minIdealKg = (18.5 * (heightInMeters * heightInMeters)).toFixed(1);
+            const maxIdealKg = (maxNormalBmi * (heightInMeters * heightInMeters)).toFixed(1);
+            document.getElementById('ideal-weight-range').innerText = `${minIdealKg} - ${maxIdealKg} กิโลกรัม`;
+
+            // Weight Difference Advice
+            const adviceEl = document.getElementById('weight-advice-text');
+            if (weightInKg < minIdealKg) {
+                const diff = (minIdealKg - weightInKg).toFixed(1);
+                adviceEl.innerHTML = `ควรเพิ่มน้ำหนักอีกอย่างน้อย <span class="font-bold text-blue-600 dark:text-blue-400">${diff} กก.</span> เพื่อให้อยู่ในเกณฑ์สุขภาพดี`;
+            } else if (weightInKg > maxIdealKg) {
+                const diff = (weightInKg - maxIdealKg).toFixed(1);
+                adviceEl.innerHTML = `ควรลดน้ำหนักลงประมาณ <span class="font-bold text-amber-600 dark:text-amber-400">${diff} กก.</span> เพื่อให้อยู่ในเกณฑ์สมส่วน`;
+            } else {
+                adviceEl.innerHTML = `น้ำหนักปัจจุบันของคุณอยู่ในเกณฑ์สุขภาพดีและสมส่วนอย่างยิ่ง 🎉`;
+            }
+
+            // BMR & TDEE Calculations (Mifflin-St Jeor Formula)
+            const age = parseInt(document.getElementById('age').value) || 25;
+            const gender = document.querySelector('input[name="gender"]:checked').value;
+            const heightCm = heightInMeters * 100;
+
+            let bmr = 0;
+            if (gender === 'male') {
+                bmr = (10 * weightInKg) + (6.25 * heightCm) - (5 * age) + 5;
+            } else {
+                bmr = (10 * weightInKg) + (6.25 * heightCm) - (5 * age) - 161;
+            }
+
+            const activityFactor = parseFloat(document.getElementById('activity').value) || 1.55;
+            const tdee = bmr * activityFactor;
+
+            document.getElementById('bmr-score').innerText = `${Math.round(bmr).toLocaleString()} kcal`;
+            document.getElementById('tdee-score').innerText = `${Math.round(tdee).toLocaleString()} kcal`;
+
+            // Calorie Targets
+            document.getElementById('cal-lose').innerText = `${Math.max(1200, Math.round(tdee - 500)).toLocaleString()} kcal`;
+            document.getElementById('cal-maintain').innerText = `${Math.round(tdee).toLocaleString()} kcal`;
+            document.getElementById('cal-gain').innerText = `${Math.round(tdee + 500).toLocaleString()} kcal`;
+
+            // Update Tips Text
+            document.getElementById('nutrition-tips-text').innerText = matchedCategory.adviceDiet;
+            document.getElementById('exercise-tips-text').innerText = matchedCategory.adviceEx;
+        }
+
+        // Reset Inputs
+        function resetInputs() {
+            document.getElementById('bmi-form').reset();
+            setHeightUnit('cm');
+            setWeightUnit('kg');
+            updateAgeDisplay();
+            calculateBMI();
+            showToast("รีเซ็ตค่าเริ่มต้นเรียบร้อย");
+        }
+
+        function saveRecord() {
+            let heightInMeters = 0;
+            if (heightUnit === 'cm') {
+                heightInMeters = (parseFloat(document.getElementById('height-cm').value) || 170) / 100;
+            } else {
+                const ft = parseFloat(document.getElementById('height-ft').value) || 0;
+                const inches = parseFloat(document.getElementById('height-in').value) || 0;
+                heightInMeters = ((ft * 12 + inches) * 2.54) / 100;
+            }
+
+            let weightInKg = parseFloat(document.getElementById('weight').value) || 60;
+            if (weightUnit === 'lbs') weightInKg = weightInKg * 0.45359237;
+
+            const bmi = parseFloat((weightInKg / (heightInMeters * heightInMeters)).toFixed(1));
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('th-TH', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+            const standards = BMI_STANDARDS[currentStandard];
+            let matched = standards[standards.length - 1];
+            for (let i = 0; i < standards.length; i++) {
+                if (bmi < standards[i].max) {
+                    matched = standards[i];
+                    break;
+                }
+            }
+
+            const record = {
+                id: Date.now(),
+                date: dateStr,
+                heightCm: Math.round(heightInMeters * 100),
+                weightKg: parseFloat(weightInKg.toFixed(1)),
+                bmi: bmi,
+                status: matched.label,
+                color: matched.color
+            };
+
+            historyLogs.unshift(record);
+            if (historyLogs.length > 20) historyLogs.pop();
+
+            localStorage.setItem('bmi_history_logs', JSON.stringify(historyLogs));
+            renderHistoryTable();
+            updateChart();
+            showToast("บันทึกข้อมูลสำเร็จแล้ว 💾");
+        }
+
+        function loadSavedHistory() {
+            const saved = localStorage.getItem('bmi_history_logs');
+            if (saved) {
+                try {
+                    historyLogs = JSON.parse(saved);
+                } catch(e) {
+                    historyLogs = [];
+                }
+            }
+            renderHistoryTable();
+        }
+
+        function clearHistory() {
+            if (historyLogs.length === 0) return;
+            historyLogs = [];
+            localStorage.removeItem('bmi_history_logs');
+            renderHistoryTable();
+            updateChart();
+            showToast("ล้างประวัติเรียบร้อยแล้ว");
+        }
+
+        function deleteRecord(id) {
+            historyLogs = historyLogs.filter(item => item.id !== id);
+            localStorage.setItem('bmi_history_logs', JSON.stringify(historyLogs));
+            renderHistoryTable();
+            updateChart();
+            showToast("ลบรายการประวัติแล้ว");
+        }
+
+        function renderHistoryTable() {
+            const tbody = document.getElementById('history-table-body');
+            const emptyEl = document.getElementById('history-empty');
+
+            if (historyLogs.length === 0) {
+                tbody.innerHTML = '';
+                emptyEl.classList.remove('hidden');
+                return;
+            }
+
+            emptyEl.classList.add('hidden');
+            tbody.innerHTML = historyLogs.map(item => `
+                <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                    <td class="py-2.5 px-3 text-slate-500 dark:text-slate-400">${item.date}</td>
+                    <td class="py-2.5 px-3 font-medium">${item.heightCm} ซม.</td>
+                    <td class="py-2.5 px-3 font-medium">${item.weightKg} กก.</td>
+                    <td class="py-2.5 px-3 font-bold" style="color: ${item.color}">${item.bmi}</td>
+                    <td class="py-2.5 px-3">
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold text-white" style="background-color: ${item.color}">
+                            ${item.status}
+                        </span>
+                    </td>
+                    <td class="py-2.5 px-3 text-right">
+                        <button onclick="deleteRecord(${item.id})" class="text-slate-400 hover:text-red-500 transition-colors px-1">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function initChart() {
+            const ctx = document.getElementById('bmiChart').getContext('2d');
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'ค่า BMI',
+                        data: [],
+                        borderColor: '#6366F1',
+                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                        borderWidth: 3,
+                        tension: 0.3,
+                        fill: true,
+                        pointBackgroundColor: '#4F46E5',
+                        pointRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `BMI: ${context.parsed.y}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            min: 12,
+                            max: 38,
+                            grid: { color: 'rgba(0,0,0,0.05)' }
+                        },
+                        x: {
+                            grid: { color: 'rgba(0,0,0,0.05)' }
+                        }
+                    }
+                }
+            });
+            updateChart();
+        }
+
+        function updateChart() {
+            if (!chartInstance) return;
+            const reversedLogs = [...historyLogs].reverse();
+            chartInstance.data.labels = reversedLogs.map(item => item.date);
+            chartInstance.data.datasets[0].data = reversedLogs.map(item => item.bmi);
+            chartInstance.data.datasets[0].pointBackgroundColor = reversedLogs.map(item => item.color);
+            chartInstance.update();
+        }
+
+        // Export Result Card as Image
+        function exportResultCard() {
+            const card = document.getElementById('printable-area');
+            showToast("กำลังสร้างรูปภาพการ์ดสรุป...");
+            html2canvas(card, {
+                scale: 2,
+                useCORS: true,
+                backgroundColor: document.documentElement.classList.contains('dark') ? '#0f172a' : '#ffffff'
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `bmi-summary-${Date.now()}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                showToast("ดาวน์โหลดการ์ดสรุปเรียบร้อย 🖼️");
+            });
+        }
+
+        // Toast Notification Helper
+        function showToast(msg) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
